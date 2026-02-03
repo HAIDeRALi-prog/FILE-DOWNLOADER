@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # File Downloader - React Native Android App
 
 A beautiful and modern file downloader app for Android built with React Native. Download files by simply pasting a link!
@@ -196,13 +196,4 @@ Potential features for future versions:
 
 This project is open source and available under the MIT License.
 
-## Support
-
-For issues, questions, or contributions, please open an issue on the project repository.
-
----
-
 **Made with ❤️ using React Native**
-=======
-# FILE-DOWNLOADER
->>>>>>> 3ba5d84e377d97080ae7a56c6900ca725fd39a4a
