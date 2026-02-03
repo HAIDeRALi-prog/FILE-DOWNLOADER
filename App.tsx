@@ -12,7 +12,9 @@ import {
     PermissionsAndroid,
     Platform,
     Animated,
+    Linking,
 } from 'react-native';
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import RNFS from 'react-native-fs';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -41,24 +43,51 @@ const App = () => {
     const requestStoragePermission = async () => {
         if (Platform.OS === 'android') {
             try {
-                const granted = await PermissionsAndroid.requestMultiple([
-                    PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-                    PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-                ]);
+                // Android 13+ (API 33) - Notifications
+                if (Number(Platform.Version) >= 33) {
+                    const authStatus = await check(PERMISSIONS.ANDROID.POST_NOTIFICATIONS);
+                    if (authStatus !== RESULTS.GRANTED) {
+                        await request(PERMISSIONS.ANDROID.POST_NOTIFICATIONS);
+                    }
+                }
 
-                if (
-                    granted['android.permission.WRITE_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED &&
-                    granted['android.permission.READ_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED
-                ) {
-                    console.log('Storage permissions granted');
+                // Android 11+ (API 30) - All Files Access
+                if (Number(Platform.Version) >= 30) {
+                    // Check if MANAGE_EXTERNAL_STORAGE is granted
+                    const permissionName = 'android.permission.MANAGE_EXTERNAL_STORAGE' as any;
+
+                    // We check strictly for the permission string
+                    const permissionStatus = await check(permissionName);
+                    if (permissionStatus !== RESULTS.GRANTED) {
+                        Alert.alert(
+                            'Permission Required',
+                            'To download files, this app needs access to "Allow management of all files". Please enable it in Settings.',
+                            [
+                                { text: 'Cancel', style: 'cancel' },
+                                { text: 'Open Settings', onPress: () => Linking.openSettings() }
+                            ]
+                        );
+                    }
                 } else {
-                    Alert.alert('Permission Denied', 'Storage permission is required to download files');
+                    // API < 30
+                    const granted = await PermissionsAndroid.requestMultiple([
+                        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+                        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+                    ]);
+
+                    if (
+                        granted['android.permission.WRITE_EXTERNAL_STORAGE'] !== PermissionsAndroid.RESULTS.GRANTED ||
+                        granted['android.permission.READ_EXTERNAL_STORAGE'] !== PermissionsAndroid.RESULTS.GRANTED
+                    ) {
+                        Alert.alert('Permission Denied', 'Storage permission is required to download files');
+                    }
                 }
             } catch (err) {
                 console.warn(err);
             }
         }
     };
+
 
     const pasteFromClipboard = async () => {
         const clipboardContent = await Clipboard.getString();
